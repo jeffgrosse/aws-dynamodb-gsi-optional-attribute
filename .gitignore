@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+venv/
+.venv/
+env/
+*.pyc
+.pytest_cache/
+
+# SAM / CloudFormation build artifacts
+.aws-sam/
+packaged.yaml
+samconfig.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

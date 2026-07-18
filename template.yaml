@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aws-dynamodb-gsi-optional-attribute - minimal reference stack: one
+  DynamoDB table (UsersTable) and one Lambda (IngestFunction) demonstrating
+  the correct write pattern for an optional attribute. Deliberately does NOT
+  declare EmailIndex here - README.md's "Verify" section adds that GSI to
+  the live table via `aws dynamodb update-table`, the same way it happens in
+  practice (against a table that already has data), which is also how this
+  repo reproduces the gotcha it exists to teach.
+
+Parameters:
+  TableName:
+    Type: String
+    Description: Name of the DynamoDB users table. Must be globally unique within your account/region.
+  LogLevel:
+    Type: String
+    Default: INFO
+    AllowedValues: [DEBUG, INFO, WARNING, ERROR]
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures:
+      - arm64
+    Timeout: 15
+    MemorySize: 128
+
+Resources:
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      # No GlobalSecondaryIndexes here on purpose - EmailIndex gets added to
+      # this table after it already has data, via `aws dynamodb
+      # update-table` in README.md's "Verify" walkthrough. That's what
+      # reproduces the gotcha: a GSI added later grandfathers in any
+      # pre-existing record that violates its key schema (email present as
+      # NULL, here), rather than rejecting it. email is optional per user -
+      # a user with no email should simply have no email key at all, not an
+      # email key set to NULL. See README.md for what goes wrong when a
+      # writer gets this backwards, and why it only surfaces once the index
+      # exists.
+
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${TableName}-ingest
+      CodeUri: functions/ingest/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref LogLevel
+          TABLE_NAME: !Ref TableName
+      Policies:
+        - Statement:
+            - Sid: WriteUsersTable
+              Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt UsersTable.Arn
+
+  IngestFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${IngestFunction}
+      RetentionInDays: 14
+
+Outputs:
+  UsersTableName:
+    Description: Name of the DynamoDB users table
+    Value: !Ref UsersTable
+  UsersTableArn:
+    Description: ARN of the DynamoDB users table
+    Value: !GetAtt UsersTable.Arn
+  IngestFunctionName:
+    Description: Name of the ingest Lambda function
+    Value: !Ref IngestFunction
+  IngestFunctionArn:
+    Description: ARN of the ingest Lambda function
+    Value: !GetAtt IngestFunction.Arn

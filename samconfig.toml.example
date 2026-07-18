@@ -1,0 +1,18 @@
+# Copy this file to samconfig.toml and fill in your own values, or just run
+# `sam deploy --guided` and let it write samconfig.toml for you.
+#
+# samconfig.toml is gitignored on purpose: it's meant to be regenerated per
+# deployer/fork, and there's no reason to commit one deployer's stack name
+# or region choice as if it were the only valid one.
+
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "aws-dynamodb-gsi-optional-attribute"
+region = "us-east-1"
+confirm_changeset = true
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "TableName=\"gsi-optional-attribute-users\" LogLevel=\"INFO\""
