@@ -1,7 +1,7 @@
 # aws-dynamodb-gsi-optional-attribute
 
 > [!NOTE]
-> **Provenance:** Documents a real ValidationException encountered during PrediktSales infrastructure work. Reviewed, tested, and versioned before public release.
+> **Provenance:** Documents a real ValidationException encountered during PrediktSales infrastructure work. Reviewed and tested before public release.
 
 A minimal AWS SAM stack — one DynamoDB table, one Lambda, and one
 `update-table` call that adds a GSI mid-walkthrough — that reproduces a
